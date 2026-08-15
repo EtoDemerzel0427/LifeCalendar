@@ -1,0 +1,216 @@
+/* The grid itself.
+   One <section> per year of life. Inside, days flow top-to-bottom in weekday
+   rows and left-to-right in week columns (GitHub-contributions style).
+   A year is split into `--segments` stripes so the grid always fits the
+   viewport width — that is what makes it work on a phone. */
+
+.calendar {
+  --stripe-gap: 10px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 4px var(--pad-page) 24px;
+  display: grid;
+  gap: 2px;
+}
+
+.placeholder {
+  padding: 64px 0;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+.placeholder--error {
+  color: var(--text-dim);
+}
+
+.placeholder code {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  font-size: 0.92em;
+}
+
+/* ---------- year block ---------- */
+
+.year {
+  scroll-margin-top: calc(var(--topbar-h, 60px) + 46px);
+}
+
+.year__head {
+  position: sticky;
+  top: var(--topbar-h, 0px);
+  z-index: 10;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0 5px;
+  background: var(--bg);
+}
+
+.year--decade .year__head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-top: 1px solid var(--line);
+}
+
+.year__age {
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.year--decade .year__age {
+  color: var(--accent);
+}
+
+.year__age small {
+  margin-left: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+
+.year__range {
+  color: var(--text-faint);
+  font-family: var(--font-num);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- grid ---------- */
+
+.year__body {
+  display: grid;
+  gap: var(--stripe-gap);
+  /* Reserve exact space so unrendered years keep the scrollbar honest. */
+  min-height: calc(
+    var(--segments) * (7 * var(--cell) + 6 * var(--cell-gap)) + (var(--segments) - 1) * var(--stripe-gap)
+  );
+}
+
+.year__grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, var(--cell));
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  gap: var(--cell-gap);
+}
+
+.day,
+.pad {
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: max(1px, min(3px, calc(var(--cell) * 0.17)));
+}
+
+.pad {
+  background: transparent;
+}
+
+.day {
+  position: relative;
+  display: block;
+  background: hsl(
+    var(--h, 200) calc(var(--cell-sat0) + (var(--c, 0) + var(--boost, 0)) * var(--cell-satk))
+      calc(var(--cell-l0) - (var(--c, 0) + var(--boost, 0)) * var(--cell-k))
+  );
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+/* Days you actually wrote something about jump a step in depth, so they stand
+   out from the period colour that merely runs underneath them. */
+.day.is-logged {
+  --boost: var(--logged-boost);
+}
+
+/* A hand-picked colour overrides the ramp, so logged days inside one are
+   shaded instead — otherwise a written day would vanish into its span. */
+.day.is-logged.has-color::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--logged-veil);
+}
+
+/* Days with nothing on them stay neutral, so colour always means something. */
+.day.is-empty {
+  background: var(--cell-empty);
+}
+
+.day.is-future {
+  background: var(--cell-future);
+  box-shadow: inset 0 0 0 1px var(--cell-future-line);
+  cursor: default;
+}
+
+/* Emoji marker for days that carry one. */
+.day--emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--cell) * 0.72);
+  line-height: 1;
+  overflow: hidden;
+}
+
+/* Below ~11px an emoji is illegible noise, so it is simply dropped;
+   the cell colour still carries the day. */
+.calendar[data-emoji='off'] .day--emoji {
+  font-size: 0;
+}
+
+/* Highlight rings are drawn inside the cell. Outside them they would be
+   painted over by the sticky year label whenever the cell sits in the top
+   row of a block. */
+.day.is-today {
+  z-index: 2;
+  box-shadow: inset 0 0 0 max(1.5px, calc(var(--cell) * 0.16)) var(--today);
+}
+
+.day.is-selected {
+  z-index: 4;
+  box-shadow: inset 0 0 0 max(2px, calc(var(--cell) * 0.22)) var(--accent);
+}
+
+.day.is-match {
+  z-index: 1;
+  box-shadow: inset 0 0 0 max(1.5px, calc(var(--cell) * 0.16)) var(--match);
+}
+
+/* Hover comes last on purpose: it has to out-rank the state rules above for
+   `z-index`, or a selected cell would be stuck below the sticky year label and
+   get its enlarged corner clipped. It uses `outline` rather than `box-shadow`
+   so the ring a cell already carries stays visible underneath the pointer. */
+@media (hover: hover) {
+  .day:hover {
+    z-index: 20;
+    transform: scale(1.45);
+    outline: 1px solid var(--text);
+    outline-offset: 0;
+  }
+}
+
+@keyframes day-ping {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 max(10px, calc(var(--cell) * 1.6)) transparent;
+  }
+}
+
+.day.is-pinged::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: day-ping 0.9s ease-out 2;
+}
