@@ -101,13 +101,14 @@ export function createCalendar({ root, model, onSelect, onHover, onHoverEnd }) {
   }
 
   function padCell() {
-    const pad = document.createElement('i');
+    const pad = document.createElement('span');
     pad.className = 'pad';
     return pad;
   }
 
   function dayCell(index) {
-    const el = document.createElement('i');
+    // A <span>, not an <i>: the cell can hold an emoji and <i> would slant it.
+    const el = document.createElement('span');
     const detail = model.details.get(index);
     const credit = Math.min(100, model.credits[index]);
     let className = 'day';

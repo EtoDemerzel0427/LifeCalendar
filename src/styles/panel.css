@@ -105,11 +105,37 @@
 }
 
 .entry {
-  padding-left: 12px;
-  border-left: 2px solid var(--line);
+  margin: 0;
 }
 
+/* The things that happened that day, one bullet each. */
+.entry--lines {
+  display: grid;
+  gap: 7px;
+  padding: 0;
+  list-style: none;
+}
+
+.entry--lines li {
+  position: relative;
+  padding-left: 15px;
+}
+
+.entry--lines li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--entry-accent, var(--line-strong));
+}
+
+/* A stretch of days that covers this one — context, not today's news. */
 .entry--span {
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
   color: var(--text-dim);
   font-size: 13px;
 }

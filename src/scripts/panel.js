@@ -33,6 +33,30 @@ export function createPanel({ model, onNavigate, onClose }) {
     return span;
   }
 
+  /**
+   * A day is written as one block with `<br>` between the things that happened.
+   * Cut it there into real list items, so several points read as several
+   * points instead of one run-on paragraph. Splitting over the DOM rather than
+   * the string keeps any inline markup inside a line intact.
+   */
+  function splitLines(html) {
+    const source = document.createElement('div');
+    source.innerHTML = html;
+
+    const items = [];
+    let current = document.createElement('li');
+    for (const node of [...source.childNodes]) {
+      if (node.nodeName === 'BR') {
+        if (current.textContent.trim()) items.push(current);
+        current = document.createElement('li');
+        continue;
+      }
+      current.append(node);
+    }
+    if (current.textContent.trim()) items.push(current);
+    return items;
+  }
+
   function hueColor(hue) {
     return (
       `hsl(${hue} calc(var(--cell-sat0) + var(--swatch-i) * var(--cell-satk))` +
@@ -58,12 +82,18 @@ export function createPanel({ model, onNavigate, onClose }) {
         chip.className = 'chip';
         chip.append(swatch(entry.color ?? hueColor(entry.hue ?? day.hue)), entry.text);
         chipsEl.append(chip);
-      } else {
+      } else if (entry.kind === 'span') {
         const block = document.createElement('div');
-        block.className = entry.kind === 'span' ? 'entry entry--span' : 'entry';
+        block.className = 'entry entry--span';
         block.innerHTML = entry.html;
         if (entry.color) block.style.borderLeftColor = entry.color;
         bodyEl.append(block);
+      } else {
+        const list = document.createElement('ul');
+        list.className = 'entry entry--lines';
+        if (entry.color) list.style.setProperty('--entry-accent', entry.color);
+        for (const line of splitLines(entry.html)) list.append(line);
+        bodyEl.append(list);
       }
     }
 
